@@ -4,41 +4,44 @@ const createBus = require('./bus.js');
 describe( 'Bus implementation',()=>{
 
   it( 'handler message', ()=>{
+
     const bus         = createBus();
     const handlerFunc = jest.fn();
-    const params      = {};
+    const message     = {};
     const someTopic   = 'topic';
     
     bus.handler( someTopic, handlerFunc);
-    bus.send(someTopic, params);
-    expect( handlerFunc).toBeCalledWith( params)
+    bus.send( someTopic, message);
+    expect( handlerFunc).toBeCalledWith( message)
     
   })
-  
-  
+
+///////
   it( 'filter param', ()=>{
     
     const bus         = createBus();
-    const params      = {};
+    const params      = { type: 'cat' };
     const handlerFunc = jest.fn();
     const someTopic   = 'topic2';
     
-    bus.handler( someTopic, 'hello', handlerFunc);
-    bus.send( someTopic, 'world');
+    bus.handler( someTopic, {}, handlerFunc);
+    bus.send(someTopic, params);
 
-    expect( handlerFunc).toBeCalledWith( 'hello','world')
+    expect(handlerFunc).toBeCalledWith( params)
   })
 
+///////
   it('Checked last param', () => {
-    const bus = createBus();
+    const bus       = createBus();
     const someTopic = "topic";
 
     expect(()=>{
-      bus.handler(someTopic, {});
+      bus.handler( someTopic, {});
     }).toThrowError('The last param would be function');
     
   })
 
+///////
   it('empty handler', () => {
 
     const bus = createBus();
@@ -50,22 +53,60 @@ describe( 'Bus implementation',()=>{
 
   })
 
+///////
+  it('passe and return value handler', ()=>{
 
-  it('multiple call', () => {
+    const bus            = createBus();
+    const someTopic      = "topic";
+    const returnMessage  = "result";
 
-    const bus         = createBus();
-    const params      = {};
-    const handlerFuncFirst = jest.fn();
+    bus.handler( someTopic, () =>  returnMessage)
+
+    const returnValue = bus.send( someTopic, {});
+    expect(returnValue).toBe(returnMessage);
+  });
+
+///////
+  it('multiple call filter', () => {
+
+    const bus               = createBus();
+    const message            = {type:'cat'};
+    const handlerFuncFirst  = jest.fn();
     const handlerFuncSecond = jest.fn();
-    const someTopic   = 'topic2';
+    const someTopic         = 'topic2';
 
-    bus.handler( someTopic, handlerFuncFirst);
-    bus.handler( someTopic, handlerFuncSecond);
-    bus.send( someTopic);
+    bus.handler( someTopic, { type:'cat' },handlerFuncSecond);
+    bus.handler( someTopic, { type:'dog' },handlerFuncFirst);
+    
 
-    expect( handlerFuncFirst).toBeCalled();
+    bus.send( someTopic, message);
+
+    expect( handlerFuncFirst).not.toBeCalled();
     expect( handlerFuncSecond).toBeCalled();
     
+  })
+
+  ///////
+  it('multiple call filter (example 2)', () => {
+
+    const bus               = createBus();
+    const message           = { type: 'cat', value: 'value' };
+    const handlerFuncFirst  = jest.fn();
+    const handlerFuncSecond = jest.fn();
+    const handlerFuncThird  = jest.fn();
+    const someTopic         = 'topic2';
+
+    bus.handler(someTopic, { value : 'not-value', type: 'cat' } , handlerFuncThird);
+    bus.handler(someTopic, { value : 'value', type: 'cat' }      , handlerFuncSecond);
+    bus.handler(someTopic, { value : 'value', type: 'dog' }      , handlerFuncFirst);
+
+
+    bus.send(someTopic, message);
+
+    expect(handlerFuncFirst).not.toBeCalled();
+    expect(handlerFuncThird).not.toBeCalled();
+    expect(handlerFuncSecond).toBeCalled();
+
   })
 
 });
