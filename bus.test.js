@@ -78,7 +78,6 @@ describe( 'Bus implementation',()=>{
 
     bus.handler( someTopic, { type:'cat' },handlerFuncSecond);
     bus.handler( someTopic, { type:'dog' },handlerFuncFirst);
-    
 
     bus.send( someTopic, message);
 
@@ -100,7 +99,6 @@ describe( 'Bus implementation',()=>{
     bus.handler(someTopic, { value : 'not-value', type: 'cat' } , handlerFuncThird);
     bus.handler(someTopic, { value : 'value', type: 'cat' }      , handlerFuncSecond);
     bus.handler(someTopic, { value : 'value', type: 'dog' }      , handlerFuncFirst);
-
 
     bus.send(someTopic, message);
 
@@ -128,5 +126,76 @@ describe( 'Bus implementation',()=>{
     expect(result).toBe("#Alex Dupond");
 
   })
+
+  ///////
+  it('multiple call Cumulate with filter', () => {
+
+    const bus = createBus();
+    const message = { prenom: 'Alex', nom: 'Dupond' };
+    const handlerFuncFirst = ({ prenom }) => "#" + prenom;
+    const handlerFuncSecond = ({ nom }, acc = '') => acc + ' ' + nom;
+    const someTopic = 'topic2';
+
+    bus.handler(someTopic, { prenom : 'Alex'}, handlerFuncFirst);
+    bus.handler(someTopic, { prenom : 'Paul'}, handlerFuncSecond);
+
+
+    const result = bus.send(someTopic, message);
+    expect(result).toBe( "#Alex");
+
+  })
+
+  ///////
+  it('Call interne', () => {
+
+    const bus              = createBus();
+    
+    bus.handler( 'calculPriceQuantity', ({price, quantity})=>{
+      return (price * quantity);
+    });
+
+    bus.handler( 'calculShop', ({product})=>{
+      return product.reduce((acc, current) => bus.send( 'calculPriceQuantity', current) + acc, 0);
+    });
+
+    const result = bus.send( 'calculShop', { product : [
+      {name : 'product 1', price : 2 , quantity : 4 },
+      {name : 'product 2', price : 3 , quantity : 2 }
+    ]});
+
+    expect(result).toBe( 14 );
+
+  })
+
+  ///////
+  it('Call multiple and interne', () => {
+
+    const bus = createBus();
+
+    bus.handler( 'calculPriceQuantity', ({ price, quantity }) => {
+      return (price * quantity);
+    });
+
+    bus.handler( 'calculShop', ({ product }) => {
+      return product.reduce((acc, current) => bus.send('calculPriceQuantity', current) + acc, 0);
+    });
+
+    bus.handler( 'calculShop', ({ product }, total = 0) => {
+      return ( product.length > 2 )? total * .5 : total;
+    });
+
+
+    const result = bus.send('calculShop', {
+      product: [
+        { name: 'product 1', price: 2, quantity: 4 },
+        { name: 'product 2', price: 3, quantity: 2 },
+        { name: 'product 3', price: 2, quantity: 1 }
+      ]
+    });
+
+    expect(result).toBe(8);
+
+  })
+
 
 });
