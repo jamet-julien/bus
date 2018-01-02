@@ -12,6 +12,7 @@ describe( 'Bus implementation',()=>{
     
     bus.handler( someTopic, handlerFunc);
     bus.send( someTopic, message);
+
     expect( handlerFunc).toBeCalledWith( message)
     
   })
@@ -27,7 +28,7 @@ describe( 'Bus implementation',()=>{
     bus.handler( someTopic, {}, handlerFunc);
     bus.send(someTopic, params);
 
-    expect(handlerFunc).toBeCalledWith( params)
+    expect( handlerFunc).toBeCalledWith( params)
   })
 
 ///////
@@ -70,7 +71,7 @@ describe( 'Bus implementation',()=>{
   it('multiple call filter', () => {
 
     const bus               = createBus();
-    const message            = {type:'cat'};
+    const message           = {type:'cat'};
     const handlerFuncFirst  = jest.fn();
     const handlerFuncSecond = jest.fn();
     const someTopic         = 'topic2';
@@ -103,9 +104,28 @@ describe( 'Bus implementation',()=>{
 
     bus.send(someTopic, message);
 
-    expect(handlerFuncFirst).not.toBeCalled();
-    expect(handlerFuncThird).not.toBeCalled();
-    expect(handlerFuncSecond).toBeCalled();
+    expect( handlerFuncFirst).not.toBeCalled();
+    expect( handlerFuncThird).not.toBeCalled();
+    expect( handlerFuncSecond).toBeCalled();
+
+  })
+
+  ///////
+  it('multiple call Cumulate', () => {
+
+    const bus               = createBus();
+    const message           = { prenom: 'Alex', nom : 'Dupond'};
+    const handlerFuncFirst  = ({prenom}) =>  "#" + prenom;
+    const handlerFuncSecond = ({ nom }, acc = '') => acc +' '+ nom;
+    const someTopic         = 'topic2';
+
+    bus.handler( someTopic, handlerFuncFirst);
+    bus.handler( someTopic, handlerFuncSecond);
+
+
+    const result = bus.send( someTopic, message);
+
+    expect(result).toBe("#Alex Dupond");
 
   })
 

@@ -1,3 +1,16 @@
+function rightPattern(message, filter){
+  for (var key in filter) {
+    if (
+      filter.hasOwnProperty(key) &&
+      message.hasOwnProperty(key) &&
+      message[key] == filter[key]) {
+      continue;
+    } else {
+      return false;
+    }
+  }
+  return true;
+}
 
 
 module.exports = function(){
@@ -17,27 +30,21 @@ module.exports = function(){
       let handlers = (handlerMap.get(topic)) ? [...handlerMap.get(topic), { filter, handlerFunc }] : [{filter, handlerFunc}];
 
       handlerMap.set( topic, handlers);
+
     },
 
     send: function ( topic, message) {
       if( handlerMap.get(topic)){
-        const called = handlerMap.get(topic).find(({filter})=>{
+        const handlerCalled = handlerMap.get(topic).filter(({ filter })=> rightPattern.call( null, message, filter));
+        let result;
 
-          for (var key in filter) {
-            if (
-              filter.hasOwnProperty( key) &&
-              message.hasOwnProperty( key) &&
-              message[key] == filter[key]) {
-                continue;
-            }else{
-              return false;
-            }
-          }
-          return true;
+        result = handlerCalled.reduce(( acc, { handlerFunc })=>{
+          
+          return (acc == undefined)? handlerFunc( message) : handlerFunc( message, acc);
 
-        });
-
-        return called.handlerFunc( message);
+        }, undefined);
+        
+        return result;
       }else{
         throw new Error(`Handler:'${topic}' not found`);
       }
