@@ -26,7 +26,7 @@ L'idée est de chainer des actions via un système d'appel d'évènement déclan
   bus.handler( 'cleanStore',{ valid : true} ,( {product, price} ) => {
     return { product, price, date : Date.now()}
   });
-  
+
   bus.handler( 'cleanStore', { valid : false} ,( {product, price} ) => {
     return bus.send('resetStore', { product, price});
   });
@@ -34,11 +34,11 @@ L'idée est de chainer des actions via un système d'appel d'évènement déclan
 
   bus.handler( 'commandStore',(message) => {
 
-    bus.send( 'saveStore', { product, price });
+    bus.send( 'saveStore', message);
 
     let priceCalcul = message.product.reduce((acc, current) => bus.send('calculPriceQuantity', current) + acc, 0);
 
-    bus.send( 'cleanStore', { ...message, valid : ( price == priceCalcul)});
+    bus.send( 'cleanStore', { ...message, valid : ( message.price == priceCalcul)});
 
   });
 
