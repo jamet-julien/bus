@@ -1,9 +1,7 @@
 # Concept Bus
 
 ## idée rapide
-En utilisant le principe d'evenement, l'idée est de faire un ensemble 
-d'action sur un object via des fonctions pures.
-
+L'idée est de chainer des actions via un système d'appel d'évènement déclanchant l'action suivante. Il sera possible d'y inclure des actions de compensation si une action a échoué.
 
 ## usage
 
@@ -11,37 +9,45 @@ d'action sur un object via des fonctions pures.
 
   const bus = createBus();
 
-  // calcule quantité
   bus.handler( 'calculPriceQuantity', ({ price, quantity }) => {
     return (price * quantity);
   });
 
-  //calcul du panier si evenement = 'calculShop'
-  bus.handler( 'calculShop', ({ product }) => {
-    return product.reduce((acc, current) => bus.send('calculPriceQuantity', current) + acc, 0);
+  bus.handler( 'saveStore', (message)=>{
+    // enregistre en base;
+    return message;
   });
 
-  //ajoute reduction si plus de 2 produits et si evenement = 'calculShop'
-  bus.handler( 'calculShop', ({ product }, total = 0) => {
-    return ( product.length > 2 )? total * .5 : total;
+   bus.handler( 'resetStore', (message)=>{
+    // supprime en base;
+    return message;
+  });
+  
+  bus.handler( 'cleanStore',{ valid : true} ,( {product, price} ) => {
+    return { product, price, date : Date.now()}
+  });
+  
+  bus.handler( 'cleanStore', { valid : false} ,( {product, price} ) => {
+    return bus.send('resetStore', { product, price});
   });
 
 
-  const result = bus.send('calculShop', {
+  bus.handler( 'commandStore',(message) => {
+
+    bus.send( 'saveStore', { product, price });
+
+    let priceCalcul = message.product.reduce((acc, current) => bus.send('calculPriceQuantity', current) + acc, 0);
+
+    bus.send( 'cleanStore', { ...message, valid : ( price == priceCalcul)});
+
+  });
+
+  const result = bus.send('commandStore', {
+    price  : 14,
     product: [
       { name: 'product 1', price: 2, quantity: 4 },
       { name: 'product 2', price: 3, quantity: 2 },
       { name: 'product 3', price: 2, quantity: 1 }
     ]
   });
-  // result : 8
-
-   const result2 = bus.send('calculShop', {
-    product: [
-      { name: 'product 1', price: 2, quantity: 4 },
-      { name: 'product 2', price: 3, quantity: 2 }
-    ]
-  });
-  // result2 : 14
-
 ```
