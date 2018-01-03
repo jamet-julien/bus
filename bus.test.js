@@ -97,8 +97,8 @@ describe( 'Bus implementation',()=>{
     const someTopic         = 'topic2';
 
     bus.handler(someTopic, { value : 'not-value', type: 'cat' } , handlerFuncThird);
-    bus.handler(someTopic, { value : 'value', type: 'cat' }      , handlerFuncSecond);
-    bus.handler(someTopic, { value : 'value', type: 'dog' }      , handlerFuncFirst);
+    bus.handler(someTopic, { value : 'value'    , type: 'cat' }      , handlerFuncSecond);
+    bus.handler(someTopic, { value : 'value'    , type: 'dog' }      , handlerFuncFirst);
 
     bus.send(someTopic, message);
 
@@ -113,28 +113,29 @@ describe( 'Bus implementation',()=>{
 
     const bus               = createBus();
     const message           = { prenom: 'Alex', nom : 'Dupond'};
-    const handlerFuncFirst  = ({prenom}) =>  "#" + prenom;
-    const handlerFuncSecond = ({ nom }, acc = '') => acc +' '+ nom;
+
+    const handlerFuncNom = (message) => bus.send('treatPrenom', { ...message, nom: `#${message.nom}#`});
+    const handlerFuncPrenom = (message) => ({ ...message, prenom : `#${message.prenom}#`});
+
     const someTopic         = 'topic2';
 
-    bus.handler( someTopic, handlerFuncFirst);
-    bus.handler( someTopic, handlerFuncSecond);
+    bus.handler('treatNom', handlerFuncNom);
+    bus.handler('treatPrenom', handlerFuncPrenom);
 
+    const result = bus.send( 'treatNom', message);
 
-    const result = bus.send( someTopic, message);
-
-    expect(result).toBe("#Alex Dupond");
+    expect(result).toMatchObject({ prenom: '#Alex#', nom: '#Dupond#' });
 
   })
 
   ///////
   it('multiple call Cumulate with filter', () => {
 
-    const bus = createBus();
-    const message = { prenom: 'Alex', nom: 'Dupond' };
-    const handlerFuncFirst = ({ prenom }) => "#" + prenom;
+    const bus               = createBus();
+    const message           = { prenom: 'Alex', nom: 'Dupond' };
+    const handlerFuncFirst  = ({ prenom }) => "#" + prenom;
     const handlerFuncSecond = ({ nom }, acc = '') => acc + ' ' + nom;
-    const someTopic = 'topic2';
+    const someTopic         = 'topic2';
 
     bus.handler(someTopic, { prenom : 'Alex'}, handlerFuncFirst);
     bus.handler(someTopic, { prenom : 'Paul'}, handlerFuncSecond);
@@ -180,10 +181,6 @@ describe( 'Bus implementation',()=>{
       return product.reduce((acc, current) => bus.send('calculPriceQuantity', current) + acc, 0);
     });
 
-    bus.handler( 'calculShop', ({ product }, total = 0) => {
-      return ( product.length > 2 )? total * .5 : total;
-    });
-
 
     const result = bus.send('calculShop', {
       product: [
@@ -193,8 +190,8 @@ describe( 'Bus implementation',()=>{
       ]
     });
 
-    expect(result).toBe(8);
 
+    expect(result).toBe( 16);
   })
 
 

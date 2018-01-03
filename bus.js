@@ -35,16 +35,8 @@ module.exports = function(){
 
     send: function ( topic, message) {
       if( handlerMap.get(topic)){
-        const handlerCalled = handlerMap.get(topic).filter(({ filter })=> rightPattern.call( null, message, filter));
-        let result;
-
-        result = handlerCalled.reduce(( acc, { handlerFunc })=>{
-          
-          return (acc == undefined)? handlerFunc( message) : handlerFunc( message, acc);
-
-        }, undefined);
-        
-        return result;
+        const handlerCalled = handlerMap.get(topic).find(({ filter })=> rightPattern.call( null, message, filter));       
+        return handlerCalled.handlerFunc( message);
       }else{
         throw new Error(`Handler:'${topic}' not found`);
       }
